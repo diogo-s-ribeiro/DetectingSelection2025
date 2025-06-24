@@ -1,0 +1,69 @@
+initialize() {
+	
+	//defineConstant("sc",	  0	);
+	defineConstant("seed", getSeed()	);
+	
+	initializeMutationRate(0);
+	initializeMutationType("m1", 0.5, "f", sc);
+	initializeGenomicElementType("g1", m1, 1.0);
+	m1.convertToSubstitution = F;
+	initializeGenomicElement(g1, 0, 0);
+	initializeRecombinationRate(0);
+}
+
+1 early() {
+	sim.addSubpop("p0", 500);
+	sim.addSubpop("p1", 500);
+}
+
+1 late() {
+	p1.genomes.addNewDrawnMutation(m1, 0);
+}
+
+9 early() {
+	sim.addSubpop("p10", 1000);
+	p10.setMigrationRates(c(p0, p1), c(0.5, 0.5));
+	sim.setValue("m1_freqs", c()); // initialize frequency vector
+}
+
+10 early() {
+	p10.setMigrationRates(c(p0, p1), c(0.0, 0.0));
+	p0.setSubpopulationSize(0);
+	p1.setSubpopulationSize(0);
+}
+
+// ✅ This block runs every generation
+late() {
+	if (sim.cycle >= 10 & sim.cycle % 10 == 0) {
+		muts = sim.mutationsOfType(m1);
+		counts = sim.mutationCounts(p10, muts);
+		total_genomes = p10.individualCount * 2;
+		
+		freq = 0.0;
+		if (size(counts) > 0) {
+			freq = counts[0] / total_genomes;
+		}
+		
+		oldFreqs = sim.getValue("m1_freqs");
+		sim.setValue("m1_freqs", c(oldFreqs, freq));
+	}
+}
+
+80 late() {
+	
+	filename = "freqs_" + sc + "_" + seed + ".txt";
+	freqs = sim.getValue("m1_freqs");
+	
+	
+	freqs = sim.getValue("m1_freqs");
+	
+	freqText = "";
+	for (f in freqs) {
+		freqText = freqText + f + "\n";
+	}
+	
+	
+	writeFile("./sims/"+filename, freqText);
+	catn("Wrote frequencies to file: " + filename);
+	catn(freqs);
+}
